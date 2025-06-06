@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glitched Da Kitty Cat's Steam Game Gen</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="static/styles.css">
+</head>
+<body>
+    <h1>Glitched Da Kitty Cat's Steam Game Gen</h1>
+    <div class="container">
+        <div class="card">
+            <form method="POST" action="/">
+                <div class="mb-3 search-bar">
+                    <input type="text" class="form-control" id="game_name" name="game_name" placeholder="Search for a game..." required>
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+            </form>
+            {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+            {% if success %}
+                <div class="alert alert-success">
+                    {{ success }}
+                    {% if steam_id %}
+                        <div class="mt-3">
+                            <button class="btn-download" onclick="downloadGame('{{ steam_id }}')">Download</button>
+                        </div>
+                        <div id="downloadPopup" class="popup">
+                            <button class="close-btn" onclick="toggleDownloadPopup()">Close</button>
+                            <p id="downloadMessage"></p>
+                        </div>
+                        <script>
+                            function downloadGame(steamId) {
+                                fetch(`/download/${steamId}`, {
+                                    method: 'POST',
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        document.getElementById('downloadMessage').innerText = data.message;
+                                    } else {
+                                        document.getElementById('downloadMessage').innerText = 'Failed to download the game.';
+                                    }
+                                    toggleDownloadPopup();
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                    document.getElementById('downloadMessage').innerText = 'An error occurred while downloading the game.';
+                                    toggleDownloadPopup();
+                                });
+                            }
+
+                            function toggleDownloadPopup() {
+                                const popup = document.getElementById('downloadPopup');
+                                popup.classList.toggle('active');
+                            }
+                        </script>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+        <div class="text-center mt-4">
+            <a href="https://glitched-da-kitty-cat.is-a.dev/" target="_blank" class="btn btn-secondary">
+                Visit Glitched Da Kitty Cat
+            </a>
+        </div>
+        {% if game_details %}
+        <div class="text-center mt-4">
+            <button onclick="togglePopup()" class="btn-secondary" style="margin-top: 1rem;">Show Game Info</button>
+        </div>
+
+            <div id="gamePopup" class="popup">
+                <button class="close-btn" onclick="togglePopup()">Close</button>
+                <h2>{{ game_details.name }}</h2>
+                <img src="{{ game_details.header_image }}" alt="{{ game_details.name }}" style="width: 100%; border-radius: 0.5rem;">
+                <p><strong>About the Game:</strong> {{ game_details.short_description }}</p>
+                <p><strong>Price:</strong> {{ game_details.price_overview.final_formatted if game_details.price_overview else 'Free' }}</p>
+                <p><strong>Release Date:</strong> {{ game_details.release_date.date }}</p>
+                <p><strong>Developers:</strong> {{ ", ".join(game_details.developers) }}</p>
+                <p><strong>Publishers:</strong> {{ ", ".join(game_details.publishers) }}</p>
+                <a href="steam://store/{{ game_details.steam_appid }}" class="btn-secondary" style="margin-top: 1rem; display: inline-block;">Open in Steam</a>
+
+                <div class="tabs mt-3">
+                    <button class="tab-button" onclick="showTab('popupScreenshots')">Screenshots</button>
+                    <button class="tab-button" onclick="showTab('popupTrailers')">Trailers</button>
+                </div>
+                <div id="popupScreenshots" class="tab-content">
+                    {% for screenshot in game_details.screenshots[:3] %}
+                        <img src="{{ screenshot.path_thumbnail }}" alt="Screenshot" style="margin: 0.5rem; width: 100%; max-width: 300px;">
+                    {% endfor %}
+                </div>
+                <div id="popupTrailers" class="tab-content" style="display: none;">
+                    {% for movie in game_details.movies[:5] %}
+                        <video controls style="margin: 0.5rem; width: 100%; max-width: 300px;">
+                            <source src="{{ movie.mp4.max }}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    {% endfor %}
+                </div>
+            </div>
+            <script>
+                function togglePopup() {
+                    const popup = document.getElementById('gamePopup');
+                    popup.classList.toggle('active');
+                }
+
+                function showTab(tabId) {
+                    const tabContent = document.getElementById(tabId);
+                    if (tabContent.style.display === 'block') {
+                        tabContent.style.display = 'none';
+                    } else {
+                        document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+                        tabContent.style.display = 'block';
+                    }
+                }
+            </script>
+        {% endif %}
+    </div>
+</body>
+</html>
