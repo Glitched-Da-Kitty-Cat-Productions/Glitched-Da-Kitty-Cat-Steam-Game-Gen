@@ -1,6 +1,6 @@
 # Glitched Da Kitty Cat's Steam Game Gen
 
-[![Discord Presence](https://lanyard-profile-readme.vercel.app/api/1276059904548929549?theme=dark)](https://discord.com/users/1276059904548929549)
+[![Discord Presence](https://lanyard-profile-readme.vercel.app/api/1361130884140634322?theme=dark)](https://discord.com/users/1361130884140634322)
 
 A tool to search for Steam games, fetch their details, and download them with ease. Includes features like game information popups, trailers, screenshots, and more.
 
