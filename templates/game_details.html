@@ -52,6 +52,9 @@
          gap: 1rem;
          justify-content: center;
          }
+         .actions:hover {
+         cursor: pointer;
+         }
          .actions .btn {
          padding: 0.8rem 1.5rem;
          font-size: 1rem;
@@ -103,9 +106,42 @@
          </div>
          <div class="actions">
             <a href="steam://store/{{ game_details.steam_appid }}" class="btn btn-secondary">View on Steam</a>
-            <a href="/download/{{ game_details.steam_appid }}" class="btn btn-secondary">Download Game</a>
+            <a onclick="downloadGame('{{ game_details.steam_appid }}')" class="btn btn-secondary">Download Game</a>
          </div>
+         <div id="downloadPopup" class="popup">
+            <div class="popup-content">
+               <span class="close-btn" onclick="toggleDownloadPopup()">&times;</span>
+               <p id="downloadMessage"></p>
+            </div>
+         </div>
+         <script>
+            function downloadGame(steamId) {
+                fetch(`/download/${steamId}`, {
+                    method: 'POST',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('downloadMessage').innerText = data.message;
+                    } else {
+                        document.getElementById('downloadMessage').innerText = 'Failed to download the game.';
+                    }
+                    toggleDownloadPopup();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('downloadMessage').innerText = 'An error occurred while downloading the game.';
+                    toggleDownloadPopup();
+                });
+            }
+            
+            function toggleDownloadPopup() {
+                const popup = document.getElementById('downloadPopup');
+                popup.classList.toggle('active');
+            }
+         </script>
          {% endif %}
       </div>
+      <script></script>
    </body>
 </html>
