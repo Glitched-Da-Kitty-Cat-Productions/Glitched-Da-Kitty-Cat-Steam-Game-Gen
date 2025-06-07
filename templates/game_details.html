@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>{{ game_details.name if game_details else "Game Details" }}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+      <link rel="stylesheet" href="/static/styles.css">
+   </head>
+   <body>
+      <style>
+         .header-image {
+         width: 100%;
+         max-height: 300px;
+         object-fit: cover;
+         border-radius: 0.5rem;
+         margin-bottom: 1rem;
+         }
+         .tagline {
+         font-size: 1.2rem;
+         color: #ccc;
+         margin-bottom: 2rem;
+         }
+         .game-details ul {
+         list-style: none;
+         padding: 0;
+         }
+         .game-details ul li {
+         margin-bottom: 0.5rem;
+         font-size: 1rem;
+         }
+         .system-requirements h3 {
+         margin-top: 1rem;
+         font-size: 1.2rem;
+         color: #f0f0ff;
+         }
+         .screenshots {
+         display: flex;
+         flex-wrap: wrap;
+         gap: 1rem;
+         margin-top: 1rem;
+         }
+         .screenshot {
+         width: 200px;
+         height: auto;
+         border-radius: 0.5rem;
+         box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+         }
+         .actions {
+         margin-top: 2rem;
+         display: flex;
+         gap: 1rem;
+         justify-content: center;
+         }
+         .actions .btn {
+         padding: 0.8rem 1.5rem;
+         font-size: 1rem;
+         border-radius: 0.5rem;
+         text-decoration: none;
+         color: white;
+         background-color: #007bff;
+         text-align: center;
+         }
+         .actions .btn:hover {
+         background-color: #0056b3;
+         }
+      </style>
+      <div class="container">
+         {% if error %}
+         <div class="alert alert-danger">{{ error }}</div>
+         {% else %}
+         <div class="game-header">
+            <img src="{{ game_details.header_image }}" alt="{{ game_details.name }}" class="header-image">
+            <h1>{{ game_details.name }}</h1>
+            <p class="tagline">{{ game_details.short_description }}</p>
+         </div>
+         <div class="game-details">
+            <h2>About the Game</h2>
+            <p>{{ game_details.detailed_description | safe }}</p>
+            <h2>Details</h2>
+            <ul>
+               <li><strong>Price:</strong> {{ game_details.price_overview.final_formatted if game_details.price_overview else 'Free' }}</li>
+               <li><strong>Release Date:</strong> {{ game_details.release_date.date }}</li>
+               <li><strong>Developers:</strong> {{ ", ".join(game_details.developers) }}</li>
+               <li><strong>Publishers:</strong> {{ ", ".join(game_details.publishers) }}</li>
+               <li><strong>Genres:</strong> {{ ", ".join(game_details.genres | map(attribute='description')) }}</li>
+            </ul>
+            <h2>System Requirements</h2>
+            <div class="system-requirements">
+               <h3>Minimum:</h3>
+               <p>{{ game_details.pc_requirements.minimum | safe }}</p>
+               <h3>Recommended:</h3>
+               <p>{{ game_details.pc_requirements.recommended | safe }}</p>
+            </div>
+         </div>
+         <div class="game-media">
+            <h2>Screenshots</h2>
+            <div class="screenshots">
+               {% for screenshot in game_details.screenshots %}
+               <img src="{{ screenshot.path_thumbnail }}" alt="Screenshot" class="screenshot">
+               {% endfor %}
+            </div>
+         </div>
+         <div class="actions">
+            <a href="steam://store/{{ game_details.steam_appid }}" class="btn btn-secondary">View on Steam</a>
+            <a href="/download/{{ game_details.steam_appid }}" class="btn btn-secondary">Download Game</a>
+         </div>
+         {% endif %}
+      </div>
+   </body>
+</html>

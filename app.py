@@ -14,6 +14,18 @@ DOWNLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "downloads")
 if not os.path.exists(DOWNLOAD_FOLDER):
     os.makedirs(DOWNLOAD_FOLDER)
 
+def load_game_data():
+    try:
+        response = requests.get(GAME_DATA_URL)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"Failed to fetch game data. HTTP {response.status_code}")
+            return {}
+    except Exception as e:
+        print(f"Error loading game data: {e}")
+        return {}
+
 def find_steam_id_by_name(game_name):
     try:
         response = requests.get(STEAM_API_URL)
@@ -89,6 +101,58 @@ def index():
             return render_template("index.html", error="Game not found.")
     return render_template("index.html")
 
+@app.route("/games-list", methods=["GET", "POST"])
+def games_list():
+    try:
+        search_query = request.form.get("search_query", "").strip().lower() if request.method == "POST" else ""
+        game_data = load_game_data()
+        games = []
+
+        if search_query:
+            steam_id = find_steam_id_by_name(search_query)
+            if steam_id:
+                game_details = fetch_game_details(steam_id)
+                if game_details:
+                    games.append({
+                        "name": game_details.get("name", f"Game {steam_id}"),
+                        "steam_id": steam_id,
+                        "header_image": game_details.get("header_image", ""),
+                        "short_description": game_details.get("short_description", "No description available."),
+                        "price": game_details.get("price_overview", {}).get("final_formatted", "Free"),
+                        "release_date": game_details.get("release_date", {}).get("date", "Unknown"),
+                    })
+        else:
+            count = 0
+            for game_id, game_info in game_data.items():
+                if count >= 30:
+                    break
+                game_details = fetch_game_details(game_id)
+                if game_details:
+                    games.append({
+                        "name": game_details.get("name", f"Game {game_id}"),
+                        "steam_id": game_id,
+                        "header_image": game_details.get("header_image", ""),
+                        "short_description": game_details.get("short_description", "No description available."),
+                        "price": game_details.get("price_overview", {}).get("final_formatted", "Free"),
+                        "release_date": game_details.get("release_date", {}).get("date", "Unknown"),
+                    })
+                    count += 1
+
+        return render_template("games_list.html", games=games, search_query=search_query)
+    except Exception as e:
+        return render_template("games_list.html", error=f"Error: {e}")
+
+@app.route("/game/<steam_id>", methods=["GET"])
+def game_details(steam_id):
+    try:
+        game_details = fetch_game_details(steam_id)
+        if game_details:
+            return render_template("game_details.html", game_details=game_details)
+        else:
+            return render_template("game_details.html", error="Game details not found.")
+    except Exception as e:
+        return render_template("game_details.html", error=f"Error: {e}")
+
 @app.route("/download/<steam_id>", methods=["POST"])
 def download(steam_id):
     result = download_game(steam_id)
@@ -97,4 +161,4 @@ def download(steam_id):
 if __name__ == "__main__":
     port = 5000
     url = f"http://127.0.0.1:{port}/"
-    app.run(debug=True,port=port)
+    app.run(debug=True, port=port)

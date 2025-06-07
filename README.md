@@ -41,7 +41,7 @@ python app.py
 
 ### Do this - 
 
-1. Download and install [SteamTools](https://www.steamtools.net) translate it somehow.
+1. Download and install [SteamTools](https://www.steamtools.net/download.html#)
 2. Run the setup you downloaded
 3. Run the Steamtools.exe
 4. Go to the game you want to download's folder with the lua, manifests, sts
