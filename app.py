@@ -3,7 +3,7 @@ import json
 import requests
 import zipfile
 from flask import Flask, render_template, request, jsonify
-
+import difflib
 app = Flask(__name__)
 
 GAME_DATA_URL = "https://fares.top/game_data.json"
@@ -31,22 +31,33 @@ def find_steam_id_by_name(game_name):
         response = requests.get(STEAM_API_URL)
         if response.status_code == 200:
             data = response.json()
-            for app in data["applist"]["apps"]:
-                if app["name"].lower() == game_name.lower():
-                    return app["appid"]
+            game_names = [app["name"] for app in data["applist"]["apps"]]
+            closest_matches = difflib.get_close_matches(game_name, game_names, n=1, cutoff=0.6)
+            if closest_matches:
+                matched_name = closest_matches[0]
+                for app in data["applist"]["apps"]:
+                    if app["name"].lower() == matched_name.lower():
+                        return app["appid"]
         return None
     except Exception as e:
         print(f"Error fetching Steam API: {e}")
         return None
+
 
 def download_game(steam_id):
     try:
         if not os.path.exists(DOWNLOAD_FOLDER):
             os.makedirs(DOWNLOAD_FOLDER)
 
+        game_details = fetch_game_details(steam_id)
+        if not game_details:
+            return f"Failed to fetch game details for Steam ID: {steam_id}"
+
+        game_name = game_details.get("name", f"Game {steam_id}")
         file_path = os.path.join(DOWNLOAD_FOLDER, f"{steam_id}.zip")
-        extract_path = os.path.join(DOWNLOAD_FOLDER, steam_id)
+        extract_path = os.path.join(DOWNLOAD_FOLDER, game_name)
         download_url = GAME_DOWNLOAD_URL.format(steam_id=steam_id)
+
         response = requests.get(download_url, stream=True)
         if response.status_code == 200:
             with open(file_path, "wb") as f:
@@ -121,6 +132,8 @@ def games_list():
                         "price": game_details.get("price_overview", {}).get("final_formatted", "Free"),
                         "release_date": game_details.get("release_date", {}).get("date", "Unknown"),
                     })
+            else:
+                return render_template("games_list.html", error="No close matches found for your search.")
         else:
             count = 0
             for game_id, game_info in game_data.items():
