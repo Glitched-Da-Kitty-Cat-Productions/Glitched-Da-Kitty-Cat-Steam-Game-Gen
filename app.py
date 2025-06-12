@@ -4,6 +4,12 @@ import requests
 import zipfile
 from flask import Flask, render_template, request, jsonify
 import difflib
+import shutil
+import subprocess
+import psutil 
+import ctypes
+import pyuac
+
 app = Flask(__name__)
 
 GAME_DATA_URL = "https://fares.top/game_data.json"
@@ -171,7 +177,71 @@ def download(steam_id):
     result = download_game(steam_id)
     return jsonify({"success": True, "message": result})
 
+@app.route('/run-admin', methods=['POST'])
+def run_admin():
+    try:
+        if not pyuac.isUserAdmin():
+            pyuac.runAsAdmin()
+            os._exit(0)  # Terminate the non-admin process
+            return jsonify({"message": "Re-launching as admin! Please refresh the page."})
+        else:
+            return jsonify({"message": "App is already running with admin privileges."})
+    except Exception as e:
+        return jsonify({"message": f"Failed to restart app with admin privileges: {e}"}), 500
+
+@app.route('/auto-add-game', methods=['POST'])
+def auto_add_game():
+    try:
+        if not request.is_json or request.json is None:
+            return jsonify({"message": "Invalid or missing JSON in request."}), 400
+        steam_id = request.json.get('steam_id')
+        if not steam_id:
+            return jsonify({"message": "Steam ID is required."}), 400
+
+        game_details = fetch_game_details(steam_id)
+        if not game_details:
+            return jsonify({"message": "Failed to fetch game details."}), 500
+
+        game_name = game_details.get("name", f"Game_{steam_id}")
+        lua_source_folder = os.path.join(DOWNLOAD_FOLDER, game_name)
+
+        lua_target_folder = r"C:\Program Files (x86)\Steam\config\stplug-in"
+        manifest_target_folder = r"C:\Program Files (x86)\Steam\config\depotcache"
+
+        for root, _, files in os.walk(lua_source_folder):
+            for file in files:
+                if file.endswith('.lua'):
+                    shutil.copy(os.path.join(root, file), lua_target_folder)
+
+        for root, _, files in os.walk(lua_source_folder):
+            for file in files:
+                if file.endswith('.manifest'):
+                    shutil.copy(os.path.join(root, file), manifest_target_folder)
+
+        for process in psutil.process_iter(['name']):
+            if process.info['name'] and 'steam' in process.info['name'].lower():
+                process.terminate()
+        subprocess.run([r"C:\Program Files (x86)\Steam\Steam.exe"])
+
+        return jsonify({"message": "Game files added to Steam and Steam restarted successfully."})
+    except Exception as e:
+        return jsonify({"message": f"Failed to auto-add game to Steam: {e}"}), 500
+
+@app.route('/check-admin', methods=['GET'])
+def check_admin():
+    if is_admin():
+        return jsonify({"message": "The app is running with admin privileges."})
+    else:
+        return jsonify({"message": "The app is NOT running with admin privileges."})
+
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0
+    except:
+        return False
+
+def main():
+    app.run(debug=True, port=5000)
+
 if __name__ == "__main__":
-    port = 5000
-    url = f"http://127.0.0.1:{port}/"
-    app.run(debug=True, port=port)
+    main()
