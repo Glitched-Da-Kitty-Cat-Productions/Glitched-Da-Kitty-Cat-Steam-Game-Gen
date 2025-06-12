@@ -37,6 +37,11 @@ python app.py
 - Download games as zip files, automatically extract them, and delete the zip after extraction.
 - Open games directly in the Steam browser.
 
+## New Feature: Auto Add Game to Steam
+
+With the new Auto Add feature, you no longer need SteamTools to add games to Steam. This feature automatically places the necessary `.lua` and `.manifest` files into the appropriate Steam directories and restarts Steam for you but it will require admin.
+
+
 ## Using SteamTools to Add Games to Your Steam Library
 
 ### Do this - 
