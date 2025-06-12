@@ -1,0 +1,7 @@
+flask
+requests
+customtkinter
+psutil
+pyuac
+colorama
+ansi2html

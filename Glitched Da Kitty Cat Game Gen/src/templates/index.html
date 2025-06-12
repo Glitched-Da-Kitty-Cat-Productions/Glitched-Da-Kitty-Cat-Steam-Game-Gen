@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glitched Da Kitty Cat's Steam Game Gen</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="static/styles.css">
+</head>
+<body>
+    <div class="header">
+        <h1>Glitched Da Kitty Cat's Steam Game Gen</h1>
+    </div>
+    <div class="sidebar">
+        <div class="sidebar-section">
+            <h2>Navigation</h2>
+            <button class="btn btn-secondary" onclick="window.location.href='/games-list'">Go To Games List</button>
+            <button class="btn btn-secondary" id="how-to-install-btn">How to install games</button>
+            <button class="btn btn-secondary" id="instructions-btn">How to install dlcs with cream api</button>
+        </div>
+        <div class="sidebar-section">
+            <h2>Admin Tools</h2>
+            <button class="btn btn-secondary" onclick="runAppWithAdmin()">Run As Admin</button>
+            <button class="btn btn-secondary" onclick="checkAdminStatus()">Check Admin Status</button>
+           <button class="btn btn-secondary" onclick="autoAddGameToSteam('{{ steam_id }}')">Auto Add Games</button>
+        </div>
+    </div>
+    <div class="container">
+        <div class="search-bar">
+            <form method="POST" action="/" style="display: flex; width: 100%; max-width: 600px;">
+                <input type="text" class="form-control" id="game_name" name="game_name" placeholder="Search for a game..." required>
+                <button type="submit" class="btn btn-primary">Search</button>
+            </form>
+        </div>
+        {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        {% if success %}
+        <div class="alert alert-success">
+            {{ success }}
+            {% if steam_id %}
+            <div class="mt-3">
+                <button class="btn-download" onclick="downloadGame('{{ steam_id }}')">Download</button>
+            </div>
+            <div id="downloadPopup" class="popup">
+                <button class="close-btn" onclick="toggleDownloadPopup()">Close</button>
+                <p id="downloadMessage"></p>
+            </div>
+            <script>
+                function downloadGame(steamId) {
+                    fetch(`/download/${steamId}`, {
+                        method: 'POST',
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById('downloadMessage').innerText = data.message;
+                        } else {
+                            document.getElementById('downloadMessage').innerText = 'Failed to download the game.';
+                        }
+                        toggleDownloadPopup();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        document.getElementById('downloadMessage').innerText = 'An error occurred while downloading the game.';
+                        toggleDownloadPopup();
+                    });
+                }
+
+                function toggleDownloadPopup() {
+                    const popup = document.getElementById('downloadPopup');
+                    popup.classList.toggle('active');
+                }
+            </script>
+            {% endif %}
+        </div>
+        {% endif %}
+         <div class="popup" id="instructions-popup">
+            <div class="popup-content">
+               <span class="close-btn" id="close-instructions">&times;</span>
+               <h2>Information</h2>
+               <p>Use <strong>CreamInstaller.exe</strong> to unlock and manage DLCs for your games. Follow the steps below carefully to avoid issues.</p>            
+               <h2>Instructions</h2>
+               <ol>
+                  <li>Start the program executable. If it doesn't launch, refer to the installation guide.</li>
+                  <li>Choose which programs and/or games the program should scan for DLC. The program automatically gathers all installed games from Steam, Epic, and Ubisoft directories.</li>
+                  <li>Wait for the program to download and install SteamCMD (if you chose a Steam game). This process is fast and depends on your internet speed.</li>
+                  <li>Wait for the program to gather and cache the chosen games' information & DLCs. This may take some time on the first run, depending on the number of games and DLCs.</li>
+                  <li>Carefully select which games' DLCs you wish to unlock. Note that not all DLC unlockers are tested for every game!</li>
+                  <li>Choose whether or not to install in Proxy mode. If so, pick the proxy DLL to use. If the default <code>winmm.dll</code> doesn't work, refer to the documentation for alternatives.</li>
+                  <li>Click the <strong>Generate and Install</strong> button.</li>
+                  <li>Click the <strong>OK</strong> button to close the program.</li>
+                  <li>If any DLC unlockers cause problems with your games, go back to step 5, select the games to revert changes, and click the <strong>Uninstall</strong> button.</li>
+               </ol>
+               <a target="_blank" href="https://drive.google.com/uc?export=download&id=1EhSBUZNwsGFSysNbUd_qDkWdLZ8IlNOR" class="btn btn-secondary">Download CreamInstaller</a>
+            </div>
+         </div>
+        <div class="popup" id="how-to-install-popup">
+            <div class="popup-content">
+                <span class="close-btn" id="close-popup">&times;</span>
+                <h2>How to Install the Games</h2>
+                <ol>
+                    <li>Download and install <strong>SteamTools</strong>.</li>
+                    <li>Run the setup and launch SteamTools.</li>
+                    <li>Drag the selected files onto the SteamTools window.</li>
+                    <li>Restart your Steam client and download the game.</li>
+                </ol>
+                <a href="https://www.steamtools.net/res/st-setup-1.8.16.exe" class="btn btn-secondary">Download SteamTools</a>
+            </div>
+        </div>
+    </div>
+    <script>
+        const popup = document.getElementById("how-to-install-popup");
+         const openPopupBtn = document.getElementById("how-to-install-btn");
+         const closePopupBtn = document.getElementById("close-popup");
+         
+         openPopupBtn.addEventListener("click", () => {
+             popup.classList.add("active");
+         });
+         
+         closePopupBtn.addEventListener("click", () => {
+             popup.classList.remove("active");
+         });
+         
+         window.addEventListener("click", (event) => {
+             if (event.target === popup) {
+                 popup.classList.remove("active");
+             }
+         });
+             function toggleUsageGuide() {
+         const usageInstructions = document.getElementById("usageInstructions");
+         if (usageInstructions.style.display === "none") {
+             usageInstructions.style.display = "block";
+         } else {
+             usageInstructions.style.display = "none";
+         }
+         }
+         const instructionsPopup = document.getElementById("instructions-popup");
+         const openInstructionsBtn = document.getElementById("instructions-btn");
+         const closeInstructionsBtn = document.getElementById("close-instructions");
+         
+         openInstructionsBtn.addEventListener("click", () => {
+         instructionsPopup.classList.add("active");
+         });
+         
+         closeInstructionsBtn.addEventListener("click", () => {
+         instructionsPopup.classList.remove("active");
+         });
+         
+         window.addEventListener("click", (event) => {
+         if (event.target === instructionsPopup) {
+             instructionsPopup.classList.remove("active");
+         }
+         });
+
+        function runAppWithAdmin() {
+            fetch('/run-admin', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to run the app with admin privileges.');
+                });
+        }
+
+        function checkAdminStatus() {
+            fetch('/check-admin', { method: 'GET' })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to check admin status.');
+                });
+        }
+
+         function autoAddGameToSteam(steamId) {
+             fetch('/auto-add-game', {
+                 method: 'POST',
+                 headers: {
+                     'Content-Type': 'application/json',
+                 },
+                 body: JSON.stringify({ steam_id: steamId }),
+             })
+                 .then(response => response.json())
+                 .then(data => {
+                     alert(data.message);
+                 })
+                 .catch(error => {
+                     console.error('Error:', error);
+                     alert('Failed to auto-add the game to Steam.');
+                 });
+         }
+    </script>
+</body>
+</html>
