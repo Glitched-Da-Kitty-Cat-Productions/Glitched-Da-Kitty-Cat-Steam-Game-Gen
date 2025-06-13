@@ -22,7 +22,8 @@
             <h2>Admin Tools</h2>
             <button class="btn btn-secondary" onclick="runAppWithAdmin()">Run As Admin</button>
             <button class="btn btn-secondary" onclick="checkAdminStatus()">Check Admin Status</button>
-           <button class="btn btn-secondary" onclick="autoAddGameToSteam('{{ steam_id }}')">Auto Add Games</button>
+            <button class="btn btn-secondary" onclick="autoAddGameToSteam('{{ steam_id }}')">Auto Add Games</button>
+            <button class="btn btn-secondary" onclick="removeFromLibrary('{{ steam_id }}')">Remove from Library</button>
         </div>
     </div>
     <div class="container">
@@ -192,6 +193,23 @@
                  .catch(error => {
                      console.error('Error:', error);
                      alert('Failed to auto-add the game to Steam.');
+                 });
+         }
+
+         function removeFromLibrary(steamId) {
+             fetch('/remove-from-library', {
+                 method: 'POST',
+                 headers: {
+                     'Content-Type': 'application/json',
+                 },
+                 body: JSON.stringify({ steam_id: steamId }),
+             })
+                 .then(response => response.json())
+                 .then(data => {
+                     alert(data.message);
+                 })
+                 .catch(error => {
+                     alert('Failed to remove the game from the library.');
                  });
          }
     </script>

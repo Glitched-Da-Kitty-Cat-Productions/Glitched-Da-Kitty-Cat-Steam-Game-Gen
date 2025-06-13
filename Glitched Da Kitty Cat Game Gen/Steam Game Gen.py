@@ -68,7 +68,7 @@ def download_game(steam_id):
         if not game_details:
             return f"Failed to fetch game details for Steam ID: {steam_id}"
 
-        game_name = game_details.get("name", f"Game {steam_id}")
+        game_name = game_details.get("name", f"Game {steam_id}").replace(":", "").replace("/", "_").replace("\\", "_")
         file_path = os.path.join(DOWNLOAD_FOLDER, f"{steam_id}.zip")
         extract_path = os.path.join(DOWNLOAD_FOLDER, game_name)
         download_url = GAME_DOWNLOAD_URL.format(steam_id=steam_id)
@@ -211,7 +211,7 @@ def auto_add_game():
         if not game_details:
             return jsonify({"message": "Failed to fetch game details."}), 500
 
-        game_name = game_details.get("name", f"Game_{steam_id}")
+        game_name = game_details.get("name", f"Game {steam_id}").replace(":", "").replace("/", "_").replace("\\", "_")
         lua_source_folder = os.path.join(DOWNLOAD_FOLDER, game_name)
 
         lua_target_folder = r"C:\Program Files (x86)\Steam\config\stplug-in"
@@ -235,6 +235,43 @@ def auto_add_game():
         return jsonify({"message": "Game files added to Steam and Steam restarted successfully."})
     except Exception as e:
         return jsonify({"message": f"Failed to auto-add game to Steam: {e}"}), 500
+
+@app.route('/remove-from-library', methods=['POST'])
+def remove_from_library():
+    try:
+        if not request.is_json or request.json is None:
+            return jsonify({"message": "Invalid request."}), 400
+
+        steam_id = request.json.get('steam_id')
+        if not steam_id:
+            return jsonify({"message": "Steam ID is required."}), 400
+
+        game_details = fetch_game_details(steam_id)
+        if not game_details:
+            return jsonify({"message": "Failed to fetch game details."}), 404
+
+        game_name = game_details.get("name", f"Game {steam_id}").replace(":", "").replace("/", "_").replace("\\", "_")
+        lua_target_folder = r"C:\Program Files (x86)\Steam\config\stplug-in"
+        manifest_target_folder = r"C:\Program Files (x86)\Steam\config\depotcache"
+
+        for root, _, files in os.walk(lua_target_folder):
+            for file in files:
+                if file.startswith(str(steam_id)) and file.endswith(".lua"):
+                    os.remove(os.path.join(root, file))
+
+        for root, _, files in os.walk(manifest_target_folder):
+            for file in files:
+                if file.startswith(str(steam_id)) and file.endswith(".manifest"):
+                    os.remove(os.path.join(root, file))
+                    
+        for process in psutil.process_iter(['name']):
+            if process.info['name'] and 'steam' in process.info['name'].lower():
+                process.terminate()
+        subprocess.run([r"C:\Program Files (x86)\Steam\Steam.exe"])
+
+        return jsonify({"message": "Game removed from library and Steam restarted successfully."})
+    except Exception as e:
+        return jsonify({"message": f"Error: {e}"}), 500
 
 @app.route('/check-admin', methods=['GET'])
 def check_admin():
@@ -326,4 +363,5 @@ def main():
     gui.mainloop()
 
 if __name__ == "__main__":
+    ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
     main()

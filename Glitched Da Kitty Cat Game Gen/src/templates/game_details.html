@@ -107,6 +107,7 @@
          <div class="actions">
             <a href="steam://store/{{ game_details.steam_appid }}" class="btn btn-secondary">View on Steam</a>
             <a onclick="downloadGame('{{ game_details.steam_appid }}')" class="btn btn-secondary">Download Game</a>
+            <a onclick="removeFromLibrary('{{ game_details.steam_appid }}')" class="btn btn-secondary">Remove from Library</a>
          </div>
          <div id="downloadPopup" class="popup">
             <div class="popup-content">
@@ -138,6 +139,23 @@
             function toggleDownloadPopup() {
                 const popup = document.getElementById('downloadPopup');
                 popup.classList.toggle('active');
+            }
+
+            function removeFromLibrary(steamId) {
+                fetch('/remove-from-library', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ steam_id: steamId }),
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                    })
+                    .catch(error => {
+                        alert('Failed to remove the game from the library.');
+                    });
             }
          </script>
          {% endif %}
