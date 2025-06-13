@@ -14,14 +14,12 @@
     <div class="sidebar">
         <div class="sidebar-section">
             <h2>Navigation</h2>
-            <button class="btn btn-secondary" onclick="window.location.href='/games-list'">Go to games kist</button>
+            <button class="btn btn-secondary" onclick="window.location.href='/games-list'">Go to games list</button>
             <button class="btn btn-secondary" id="how-to-install-btn">How to install games</button>
             <button class="btn btn-secondary" id="instructions-btn">How to install dlcs with cream api</button>
         </div>
         <div class="sidebar-section">
-            <h2>Admin Tools</h2>
-            <button class="btn btn-secondary" onclick="runAppWithAdmin()">Run As Admin</button>
-            <button class="btn btn-secondary" onclick="checkAdminStatus()">Check Admin Status</button>
+            <h2>Steam Tools</h2>
             <button class="btn btn-secondary" onclick="autoAddGameToSteam('{{ steam_id }}')">Auto Add Games</button>
             <button class="btn btn-secondary" onclick="removeFromLibrary('{{ steam_id }}')">Remove from Library</button>
         </div>
@@ -41,13 +39,17 @@
             {{ success }}
             {% if steam_id %}
             <div class="mt-3">
-                <button class="btn-download" onclick="downloadGame('{{ steam_id }}')">Download</button>
+                <button class="btn-secondary" onclick="downloadGame('{{ steam_id }}')">Download</button>
+                <button class="btn-secondary" onclick="gameinfo('{{ steam_id }}')">Game Information</button>
             </div>
             <div id="downloadPopup" class="popup">
                 <button class="close-btn" onclick="toggleDownloadPopup()">Close</button>
                 <p id="downloadMessage"></p>
             </div>
             <script>
+                function gameinfo(steamId) {
+                    window.location.href = `/game/${steamId}`;
+                }
                 function downloadGame(steamId) {
                     fetch(`/download/${steamId}`, {
                         method: 'POST',

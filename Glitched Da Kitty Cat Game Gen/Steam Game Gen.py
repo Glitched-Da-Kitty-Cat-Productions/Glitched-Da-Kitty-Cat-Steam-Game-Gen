@@ -200,13 +200,14 @@ def run_admin():
 
 @app.route('/auto-add-game', methods=['POST'])
 def auto_add_game():
-    try:
         if not request.is_json or request.json is None:
             return jsonify({"message": "Invalid or missing JSON in request."}), 400
         steam_id = request.json.get('steam_id')
         if not steam_id:
             return jsonify({"message": "Steam ID is required."}), 400
-
+        downloaded_game = download_game(steam_id)
+        if "Error" in downloaded_game:
+            return jsonify({"message": downloaded_game}), 500
         game_details = fetch_game_details(steam_id)
         if not game_details:
             return jsonify({"message": "Failed to fetch game details."}), 500
@@ -217,24 +218,37 @@ def auto_add_game():
         lua_target_folder = r"C:\Program Files (x86)\Steam\config\stplug-in"
         manifest_target_folder = r"C:\Program Files (x86)\Steam\config\depotcache"
 
-        for root, _, files in os.walk(lua_source_folder):
-            for file in files:
-                if file.endswith('.lua'):
-                    shutil.copy(os.path.join(root, file), lua_target_folder)
+        try:
+            for root, _, files in os.walk(lua_source_folder):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    os.chmod(file_path, 0o777) 
 
-        for root, _, files in os.walk(lua_source_folder):
-            for file in files:
-                if file.endswith('.manifest'):
-                    shutil.copy(os.path.join(root, file), manifest_target_folder)
+            os.chmod(lua_source_folder, 0o777)
 
-        for process in psutil.process_iter(['name']):
-            if process.info['name'] and 'steam' in process.info['name'].lower():
-                process.terminate()
-        subprocess.run([r"C:\Program Files (x86)\Steam\Steam.exe"])
+            for root, _, files in os.walk(lua_source_folder):
+                for file in files:
+                    if file.endswith('.lua'):
+                        shutil.copy(os.path.join(root, file), lua_target_folder)
 
-        return jsonify({"message": "Game files added to Steam and Steam restarted successfully."})
-    except Exception as e:
-        return jsonify({"message": f"Failed to auto-add game to Steam: {e}"}), 500
+            for root, _, files in os.walk(lua_source_folder):
+                for file in files:
+                    if file.endswith('.manifest'):
+                        shutil.copy(os.path.join(root, file), manifest_target_folder)
+
+            shutil.rmtree(lua_source_folder)
+
+            for process in psutil.process_iter(['name']):
+                if process.info['name'] and ('steam' in process.info['name'].lower() or 'steamservice' in process.info['name'].lower()):
+                    process.terminate()
+            subprocess.run([r"C:\Program Files (x86)\Steam\Steam.exe"])
+
+            return jsonify({"message": "Game files added to Steam and Steam restarted successfully."})
+        except PermissionError as e:
+            return jsonify({"message": f"Permission error: {e}"}), 500
+        except Exception as e:
+            return jsonify({"message": f"Failed to auto-add game to Steam: {e}"}), 500
+
 
 @app.route('/remove-from-library', methods=['POST'])
 def remove_from_library():
@@ -265,13 +279,14 @@ def remove_from_library():
                     os.remove(os.path.join(root, file))
                     
         for process in psutil.process_iter(['name']):
-            if process.info['name'] and 'steam' in process.info['name'].lower():
+            if process.info['name'] and ('steam' in process.info['name'].lower() or 'steamservice' in process.info['name'].lower()):
                 process.terminate()
         subprocess.run([r"C:\Program Files (x86)\Steam\Steam.exe"])
 
         return jsonify({"message": "Game removed from library and Steam restarted successfully."})
     except Exception as e:
         return jsonify({"message": f"Error: {e}"}), 500
+
 
 @app.route('/check-admin', methods=['GET'])
 def check_admin():
@@ -285,7 +300,6 @@ def is_admin():
         return ctypes.windll.shell32.IsUserAnAdmin() != 0
     except:
         return False
-
 init()
 
 class TextWidgetHandler(logging.Handler):
@@ -354,10 +368,6 @@ def main():
     flask_thread.start()
     text_handler = TextWidgetHandler(gui.console_output)
     text_handler.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
-    logger = logging.getLogger("werkzeug")
-    logger.handlers.clear()
-    logger.addHandler(text_handler)
-    logger.setLevel(logging.INFO)
     logging.getLogger().addHandler(text_handler)
     logging.getLogger().setLevel(logging.INFO)
     gui.mainloop()
